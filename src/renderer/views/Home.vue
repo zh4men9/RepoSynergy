@@ -2,222 +2,263 @@
   <div class="home">
     <div class="welcome-section">
       <h1>欢迎使用 RepoSynergy</h1>
-      <p>高效管理您的 GitHub 和 Gitee 仓库</p>
+      <p v-if="!authStore.isAuthenticated" class="auth-tip">
+        请先在设置页面配置 GitHub 或 Gitee 的访问令牌
+      </p>
     </div>
 
-    <div class="status-section" v-if="isAuthenticated">
-      <div class="status-card">
-        <h2>GitHub 状态</h2>
-        <p>用户名: {{ githubUsername }}</p>
-        <p>仓库数量: {{ githubRepos.length }}</p>
-        <p>同步中: {{ syncingGithubCount }}</p>
+    <div class="stats-section">
+      <div class="stat-card">
+        <h3>同步仓库</h3>
+        <div class="stat-value">{{ repositoryStore.syncEnabledRepos.length }}</div>
       </div>
-
-      <div class="status-card">
-        <h2>Gitee 状态</h2>
-        <p>用户名: {{ giteeUsername }}</p>
-        <p>仓库数量: {{ giteeRepos.length }}</p>
-        <p>同步中: {{ syncingGiteeCount }}</p>
+      <div class="stat-card">
+        <h3>同步间隔</h3>
+        <div class="stat-value">{{ syncStore.syncInterval }}分钟</div>
       </div>
     </div>
 
-    <div class="auth-section" v-else>
-      <div class="auth-card">
-        <h2>GitHub 授权</h2>
-        <el-input
-          v-model="githubToken"
-          type="password"
-          placeholder="请输入 GitHub Token"
-          show-password
-        />
-        <el-button type="primary" @click="handleGithubAuth" :loading="githubAuthLoading">
-          授权
-        </el-button>
-      </div>
-
-      <div class="auth-card">
-        <h2>Gitee 授权</h2>
-        <el-input
-          v-model="giteeToken"
-          type="password"
-          placeholder="请输入 Gitee Token"
-          show-password
-        />
-        <el-button type="primary" @click="handleGiteeAuth" :loading="giteeAuthLoading">
-          授权
-        </el-button>
+    <div class="repo-list" v-if="repositoryStore.syncEnabledRepos.length > 0">
+      <h2>同步中的仓库</h2>
+      <div class="repo-grid">
+        <div 
+          v-for="repo in repositoryStore.syncEnabledRepos" 
+          :key="repo.id" 
+          class="repo-card"
+        >
+          <div class="repo-header">
+            <h3>{{ repo.name }}</h3>
+            <span class="platform-badge" :class="repo.platform">
+              {{ repo.platform }}
+            </span>
+          </div>
+          <p class="repo-desc">{{ repo.description || '暂无描述' }}</p>
+          <div class="repo-status">
+            <span class="status-badge" :class="getSyncStatus(repo.id).status">
+              {{ getStatusText(getSyncStatus(repo.id).status) }}
+            </span>
+          </div>
+          <div class="repo-actions">
+            <button 
+              @click="handleSync(repo.id)"
+              :disabled="loading"
+              :class="{ 'syncing': getSyncStatus(repo.id).status === 'syncing' }"
+            >
+              {{ getSyncStatus(repo.id).status === 'syncing' ? '停止同步' : '开始同步' }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="quick-actions" v-if="isAuthenticated">
-      <el-button type="primary" @click="$router.push('/repositories')">
-        管理仓库
-      </el-button>
-      <el-button type="success" @click="$router.push('/analytics')">
-        查看分析
-      </el-button>
-      <el-button @click="$router.push('/settings')">
-        设置
-      </el-button>
+    <div class="empty-state" v-else>
+      <p>还没有添加需要同步的仓库</p>
+      <router-link to="/repositories" class="add-repo-btn">
+        添加仓库
+      </router-link>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
+import { onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useRepositoryStore } from '../stores/repository';
 import { useSyncStore } from '../stores/sync';
 
-const router = useRouter();
 const authStore = useAuthStore();
-const repoStore = useRepositoryStore();
+const repositoryStore = useRepositoryStore();
 const syncStore = useSyncStore();
 
-const githubToken = ref('');
-const giteeToken = ref('');
-const githubAuthLoading = ref(false);
-const giteeAuthLoading = ref(false);
+const { getSyncStatus, startSync, stopSync, loading } = syncStore;
 
-const isAuthenticated = computed(() => authStore.isAuthenticated);
-const githubUsername = computed(() => authStore.githubUsername);
-const giteeUsername = computed(() => authStore.giteeUsername);
-const githubRepos = computed(() => repoStore.githubRepos);
-const giteeRepos = computed(() => repoStore.giteeRepos);
+const getStatusText = (status: string) => {
+  const statusMap: Record<string, string> = {
+    idle: '空闲',
+    syncing: '同步中',
+    error: '错误'
+  };
+  return statusMap[status] || status;
+};
 
-const syncingGithubCount = computed(() => 
-  repoStore.syncEnabled.filter(repo => repo.platform === 'github').length
-);
-const syncingGiteeCount = computed(() => 
-  repoStore.syncEnabled.filter(repo => repo.platform === 'gitee').length
-);
+const handleSync = async (repoId: string) => {
+  const status = getSyncStatus(repoId);
+  if (status.status === 'syncing') {
+    await stopSync(repoId);
+  } else {
+    await startSync(repoId);
+  }
+};
 
 onMounted(async () => {
-  if (isAuthenticated.value) {
-    try {
-      await repoStore.fetchGithubRepos();
-      await repoStore.fetchGiteeRepos();
-      await repoStore.fetchSyncList();
-    } catch (error) {
-      ElMessage.error('获取仓库信息失败');
-    }
+  if (authStore.isAuthenticated) {
+    await Promise.all([
+      repositoryStore.fetchGithubRepos(),
+      repositoryStore.fetchGiteeRepos()
+    ]);
   }
 });
-
-const handleGithubAuth = async () => {
-  if (!githubToken.value) {
-    ElMessage.warning('请输入 GitHub Token');
-    return;
-  }
-
-  githubAuthLoading.value = true;
-  try {
-    await authStore.setGithubToken(githubToken.value);
-    await repoStore.fetchGithubRepos();
-    ElMessage.success('GitHub 授权成功');
-    githubToken.value = '';
-  } catch (error) {
-    ElMessage.error('GitHub 授权失败');
-  } finally {
-    githubAuthLoading.value = false;
-  }
-};
-
-const handleGiteeAuth = async () => {
-  if (!giteeToken.value) {
-    ElMessage.warning('请输入 Gitee Token');
-    return;
-  }
-
-  giteeAuthLoading.value = true;
-  try {
-    await authStore.setGiteeToken(giteeToken.value);
-    await repoStore.fetchGiteeRepos();
-    ElMessage.success('Gitee 授权成功');
-    giteeToken.value = '';
-  } catch (error) {
-    ElMessage.error('Gitee 授权失败');
-  } finally {
-    giteeAuthLoading.value = false;
-  }
-};
 </script>
 
 <style scoped>
 .home {
   padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .welcome-section {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
-.welcome-section h1 {
-  font-size: 2.5rem;
-  color: var(--el-text-color-primary);
-  margin-bottom: 1rem;
+.auth-tip {
+  color: var(--color-warning);
+  margin-top: 1rem;
 }
 
-.welcome-section p {
-  font-size: 1.2rem;
-  color: var(--el-text-color-regular);
-}
-
-.status-section,
-.auth-section {
+.stats-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin-bottom: 3rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
 
-.status-card,
-.auth-card {
-  padding: 2rem;
-  background-color: var(--el-bg-color);
+.stat-card {
+  background: var(--color-bg-secondary);
   border-radius: 8px;
-  box-shadow: var(--el-box-shadow-light);
+  padding: 1.5rem;
+  text-align: center;
 }
 
-.status-card h2,
-.auth-card h2 {
-  margin-bottom: 1.5rem;
-  color: var(--el-text-color-primary);
+.stat-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--color-primary);
+  margin-top: 0.5rem;
 }
 
-.status-card p {
-  margin: 0.5rem 0;
-  color: var(--el-text-color-regular);
+.repo-list {
+  margin-top: 2rem;
 }
 
-.auth-card .el-input {
-  margin-bottom: 1rem;
+.repo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
-.quick-actions {
+.repo-card {
+  background: var(--color-bg-secondary);
+  border-radius: 8px;
+  padding: 1.5rem;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   gap: 1rem;
 }
 
-@media (max-width: 768px) {
-  .home {
-    padding: 1rem;
-  }
+.repo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-  .welcome-section h1 {
-    font-size: 2rem;
-  }
+.platform-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  text-transform: capitalize;
+}
 
-  .quick-actions {
-    flex-direction: column;
-  }
+.platform-badge.github {
+  background: #24292e;
+  color: white;
+}
 
-  .quick-actions .el-button {
-    width: 100%;
-  }
+.platform-badge.gitee {
+  background: #c71d23;
+  color: white;
+}
+
+.repo-desc {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.status-badge.idle {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+}
+
+.status-badge.syncing {
+  background: var(--color-primary);
+  color: white;
+}
+
+.status-badge.error {
+  background: var(--color-error);
+  color: white;
+}
+
+.repo-actions {
+  margin-top: auto;
+}
+
+.repo-actions button {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 4px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.repo-actions button:hover {
+  background: var(--color-primary-dark);
+}
+
+.repo-actions button:disabled {
+  background: var(--color-bg-tertiary);
+  cursor: not-allowed;
+}
+
+.repo-actions button.syncing {
+  background: var(--color-error);
+}
+
+.repo-actions button.syncing:hover {
+  background: var(--color-error-dark);
+}
+
+.empty-state {
+  text-align: center;
+  margin-top: 4rem;
+  color: var(--color-text-secondary);
+}
+
+.add-repo-btn {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--color-primary);
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.add-repo-btn:hover {
+  background: var(--color-primary-dark);
 }
 </style> 

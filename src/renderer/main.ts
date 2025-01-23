@@ -9,6 +9,7 @@ import './assets/styles/index.css';
 
 // 创建Vue应用
 const app = createApp(App);
+const pinia = createPinia();
 
 // 注册 Element Plus 图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
@@ -16,7 +17,7 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 }
 
 // 使用Pinia状态管理
-app.use(createPinia());
+app.use(pinia);
 
 // 使用路由
 app.use(router);

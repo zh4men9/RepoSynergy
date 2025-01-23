@@ -1,6 +1,7 @@
 export interface Repository {
   id: string;
   name: string;
+  description?: string;
   platform: 'github' | 'gitee';
   syncEnabled: boolean;
   lastSyncTime?: string;
@@ -8,18 +9,11 @@ export interface Repository {
 
 export interface SyncStatus {
   status: 'idle' | 'syncing' | 'error';
-  message?: string;
-  lastSyncTime?: string;
+  error?: string;
 }
 
 export interface SyncResult {
   success: boolean;
-  message: string;
-  details?: {
-    added: number;
-    modified: number;
-    deleted: number;
-  };
   error?: string;
 }
 
@@ -38,22 +32,22 @@ declare global {
   interface Window {
     api: {
       auth: {
-        setGithubToken: (token: string) => Promise<{ success: boolean; username?: string; error?: string }>;
-        setGiteeToken: (token: string) => Promise<{ success: boolean; username?: string; error?: string }>;
+        setGithubToken: (token: string) => Promise<{ success: boolean; username?: string }>;
+        setGiteeToken: (token: string) => Promise<{ success: boolean; username?: string }>;
         checkStatus: () => Promise<AuthStatus>;
-        clear: () => Promise<{ success: boolean; error?: string }>;
+        clear: () => Promise<{ success: boolean }>;
       };
       repository: {
         fetchGithubRepos: () => Promise<Repository[]>;
         fetchGiteeRepos: () => Promise<Repository[]>;
-        addToSync: (repo: Repository) => Promise<{ success: boolean; error?: string }>;
-        removeFromSync: (repoId: string) => Promise<{ success: boolean; error?: string }>;
+        addToSync: (repo: Repository) => Promise<{ success: boolean }>;
+        removeFromSync: (repoId: string) => Promise<{ success: boolean }>;
       };
       sync: {
-        start: (repoId: string) => Promise<SyncResult>;
-        stop: (repoId: string) => Promise<SyncResult>;
+        start: (repoId: string) => Promise<{ success: boolean; error?: string }>;
+        stop: (repoId: string) => Promise<{ success: boolean; error?: string }>;
         status: (repoId: string) => Promise<SyncStatus>;
-        setInterval: (minutes: number) => Promise<void>;
+        setInterval: (minutes: number) => Promise<{ success: boolean }>;
         getInterval: () => Promise<number>;
       };
     };

@@ -1,17 +1,9 @@
 import { defineStore } from 'pinia';
-
-interface Repository {
-  id: string;
-  name: string;
-  platform: 'github' | 'gitee';
-  syncEnabled: boolean;
-  lastSyncTime?: string;
-}
+import type { Repository } from '../../types/electron';
 
 interface RepositoryState {
   githubRepos: Repository[];
   giteeRepos: Repository[];
-  syncList: Repository[];
   loading: boolean;
   error: string | null;
 }
@@ -20,25 +12,27 @@ export const useRepositoryStore = defineStore('repository', {
   state: (): RepositoryState => ({
     githubRepos: [],
     giteeRepos: [],
-    syncList: [],
     loading: false,
     error: null,
   }),
 
   getters: {
-    allRepositories: (state) => [...state.githubRepos, ...state.giteeRepos],
-    syncEnabled: (state) => state.syncList.filter(repo => repo.syncEnabled),
+    syncEnabledRepos: (state) => [
+      ...state.githubRepos.filter(repo => repo.syncEnabled),
+      ...state.giteeRepos.filter(repo => repo.syncEnabled),
+    ],
   },
 
   actions: {
     async fetchGithubRepos() {
+      this.loading = true;
+      this.error = null;
       try {
-        this.loading = true;
-        this.error = null;
-        this.githubRepos = await window.api.repository.fetchGithubRepos();
+        const repos = await window.api.repository.fetchGithubRepos();
+        this.githubRepos = repos;
       } catch (error) {
-        console.error('获取GitHub仓库列表失败:', error);
-        this.error = '获取GitHub仓库列表失败';
+        console.error('获取 GitHub 仓库列表失败:', error);
+        this.error = '获取 GitHub 仓库列表失败';
         throw error;
       } finally {
         this.loading = false;
@@ -46,80 +40,66 @@ export const useRepositoryStore = defineStore('repository', {
     },
 
     async fetchGiteeRepos() {
+      this.loading = true;
+      this.error = null;
       try {
-        this.loading = true;
-        this.error = null;
-        this.giteeRepos = await window.api.repository.fetchGiteeRepos();
+        const repos = await window.api.repository.fetchGiteeRepos();
+        this.giteeRepos = repos;
       } catch (error) {
-        console.error('获取Gitee仓库列表失败:', error);
-        this.error = '获取Gitee仓库列表失败';
+        console.error('获取 Gitee 仓库列表失败:', error);
+        this.error = '获取 Gitee 仓库列表失败';
         throw error;
       } finally {
         this.loading = false;
       }
     },
 
-    async addRepository(repository: Repository) {
+    async addRepository(repo: Repository) {
+      this.error = null;
       try {
-        this.loading = true;
-        this.error = null;
-        const result = await window.api.repository.addRepository(repository);
-        this.syncList.push(result);
-        return result;
-      } catch (error) {
-        console.error('添加仓库失败:', error);
-        this.error = '添加仓库失败';
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async removeRepository(id: string) {
-      try {
-        this.loading = true;
-        this.error = null;
-        await window.api.repository.removeRepository(id);
-        this.syncList = this.syncList.filter(repo => repo.id !== id);
-      } catch (error) {
-        console.error('移除仓库失败:', error);
-        this.error = '移除仓库失败';
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async updateRepository(id: string, updates: Partial<Repository>) {
-      try {
-        this.loading = true;
-        this.error = null;
-        const result = await window.api.repository.updateRepository(id, updates);
-        const index = this.syncList.findIndex(repo => repo.id === id);
-        if (index !== -1) {
-          this.syncList[index] = result;
+        const result = await window.api.repository.addToSync(repo);
+        if (result.success) {
+          if (repo.platform === 'github') {
+            const index = this.githubRepos.findIndex(r => r.id === repo.id);
+            if (index !== -1) {
+              this.githubRepos[index].syncEnabled = true;
+            }
+          } else {
+            const index = this.giteeRepos.findIndex(r => r.id === repo.id);
+            if (index !== -1) {
+              this.giteeRepos[index].syncEnabled = true;
+            }
+          }
+          return true;
         }
-        return result;
+        return false;
       } catch (error) {
-        console.error('更新仓库失败:', error);
-        this.error = '更新仓库失败';
-        throw error;
-      } finally {
-        this.loading = false;
+        console.error('添加仓库到同步列表失败:', error);
+        this.error = '添加仓库到同步列表失败';
+        return false;
       }
     },
 
-    async fetchSyncList() {
+    async removeRepository(repoId: string) {
+      this.error = null;
       try {
-        this.loading = true;
-        this.error = null;
-        this.syncList = await window.api.repository.getSyncList();
+        const result = await window.api.repository.removeFromSync(repoId);
+        if (result.success) {
+          const githubIndex = this.githubRepos.findIndex(r => r.id === repoId);
+          if (githubIndex !== -1) {
+            this.githubRepos[githubIndex].syncEnabled = false;
+          }
+          const giteeIndex = this.giteeRepos.findIndex(r => r.id === repoId);
+          if (giteeIndex !== -1) {
+            this.giteeRepos[giteeIndex].syncEnabled = false;
+          }
+          return true;
+        }
+        return false;
       } catch (error) {
-        console.error('获取同步列表失败:', error);
-        this.error = '获取同步列表失败';
-        throw error;
-      } finally {
-        this.loading = false;
+        console.error('从同步列表移除仓库失败:', error);
+        this.error = '从同步列表移除仓库失败';
+        return false;
       }
     },
   },

@@ -1,11 +1,5 @@
 import { defineStore } from 'pinia';
-
-interface SyncStatus {
-  repositoryId: string;
-  status: 'idle' | 'syncing' | 'error';
-  progress: number;
-  message: string;
-}
+import type { SyncStatus } from '../../types/electron';
 
 interface SyncState {
   syncStatuses: Record<string, SyncStatus>;
@@ -17,103 +11,88 @@ interface SyncState {
 export const useSyncStore = defineStore('sync', {
   state: (): SyncState => ({
     syncStatuses: {},
-    syncInterval: 0,
+    syncInterval: 30,
     loading: false,
     error: null,
   }),
 
   getters: {
-    isSyncing: (state) => Object.values(state.syncStatuses).some(status => status.status === 'syncing'),
-    syncProgress: (state) => {
-      const statuses = Object.values(state.syncStatuses);
-      if (statuses.length === 0) return 0;
-      return statuses.reduce((sum, status) => sum + status.progress, 0) / statuses.length;
-    },
+    getSyncStatus: (state) => (repoId: string) => state.syncStatuses[repoId] || { status: 'idle' },
   },
 
   actions: {
-    async startSync(repositoryId: string) {
+    async startSync(repoId: string) {
+      this.loading = true;
+      this.error = null;
       try {
-        this.loading = true;
-        this.error = null;
-        this.syncStatuses[repositoryId] = {
-          repositoryId,
-          status: 'syncing',
-          progress: 0,
-          message: '开始同步...',
-        };
-        await window.api.sync.start(repositoryId);
+        const result = await window.api.sync.start(repoId);
+        if (result.success) {
+          this.syncStatuses[repoId] = { status: 'syncing' };
+          return true;
+        }
+        this.error = result.error || '启动同步失败';
+        return false;
       } catch (error) {
         console.error('启动同步失败:', error);
         this.error = '启动同步失败';
-        this.syncStatuses[repositoryId] = {
-          repositoryId,
-          status: 'error',
-          progress: 0,
-          message: '同步失败',
-        };
-        throw error;
+        return false;
       } finally {
         this.loading = false;
       }
     },
 
-    async stopSync(repositoryId: string) {
+    async stopSync(repoId: string) {
+      this.loading = true;
+      this.error = null;
       try {
-        this.loading = true;
-        this.error = null;
-        await window.api.sync.stop(repositoryId);
-        this.syncStatuses[repositoryId] = {
-          repositoryId,
-          status: 'idle',
-          progress: 0,
-          message: '同步已停止',
-        };
+        const result = await window.api.sync.stop(repoId);
+        if (result.success) {
+          this.syncStatuses[repoId] = { status: 'idle' };
+          return true;
+        }
+        this.error = result.error || '停止同步失败';
+        return false;
       } catch (error) {
         console.error('停止同步失败:', error);
         this.error = '停止同步失败';
-        throw error;
+        return false;
       } finally {
         this.loading = false;
+      }
+    },
+
+    async updateSyncStatus(repoId: string) {
+      try {
+        const status = await window.api.sync.status(repoId);
+        this.syncStatuses[repoId] = status;
+      } catch (error) {
+        console.error('获取同步状态失败:', error);
       }
     },
 
     async setSyncInterval(minutes: number) {
+      this.error = null;
       try {
-        this.loading = true;
-        this.error = null;
-        await window.api.sync.setSyncInterval(minutes);
+        await window.api.sync.setInterval(minutes);
         this.syncInterval = minutes;
+        return true;
       } catch (error) {
         console.error('设置同步间隔失败:', error);
         this.error = '设置同步间隔失败';
-        throw error;
-      } finally {
-        this.loading = false;
+        return false;
       }
     },
 
     async getSyncInterval() {
+      this.error = null;
       try {
-        this.loading = true;
-        this.error = null;
-        this.syncInterval = await window.api.sync.getSyncInterval();
-        return this.syncInterval;
+        const interval = await window.api.sync.getInterval();
+        this.syncInterval = interval;
+        return interval;
       } catch (error) {
         console.error('获取同步间隔失败:', error);
         this.error = '获取同步间隔失败';
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    updateSyncStatus(repositoryId: string, status: Partial<SyncStatus>) {
-      if (this.syncStatuses[repositoryId]) {
-        this.syncStatuses[repositoryId] = {
-          ...this.syncStatuses[repositoryId],
-          ...status,
-        };
+        return this.syncInterval;
       }
     },
   },

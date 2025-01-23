@@ -13,14 +13,8 @@ dependencies:
   element-plus:
     specifier: ^2.5.6
     version: 2.9.3(vue@3.5.13)
-  pinia:
-    specifier: ^2.1.7
-    version: 2.3.1(typescript@5.7.3)(vue@3.5.13)
-  vue:
-    specifier: ^3.4.15
-    version: 3.5.13(typescript@5.7.3)
   vue-router:
-    specifier: ^4.2.5
+    specifier: ^4.5.0
     version: 4.5.0(vue@3.5.13)
 
 devDependencies:
@@ -34,7 +28,7 @@ devDependencies:
     specifier: ^18.2.4
     version: 18.2.4
   '@types/node':
-    specifier: ^20.11.19
+    specifier: ^20.17.16
     version: 20.17.16
   '@vitejs/plugin-vue':
     specifier: ^4.5.2
@@ -45,6 +39,9 @@ devDependencies:
   electron-builder:
     specifier: ^24.9.1
     version: 24.13.3(electron-builder-squirrel-windows@24.13.3)
+  pinia:
+    specifier: ^2.3.1
+    version: 2.3.1(typescript@5.7.3)(vue@3.5.13)
   typescript:
     specifier: ^5.3.3
     version: 5.7.3
@@ -58,11 +55,14 @@ devDependencies:
     specifier: ^4.5.2
     version: 4.5.2(@types/node@20.17.16)
   vite-plugin-electron:
-    specifier: ^0.29.0
-    version: 0.29.0(vite-plugin-electron-renderer@0.14.6)
+    specifier: ^0.28.0
+    version: 0.28.8(vite-plugin-electron-renderer@0.14.6)
   vite-plugin-electron-renderer:
-    specifier: ^0.14.6
+    specifier: ^0.14.5
     version: 0.14.6
+  vue:
+    specifier: ^3.5.13
+    version: 3.5.13(typescript@5.7.3)
   vue-tsc:
     specifier: ^1.8.27
     version: 1.8.27(typescript@5.7.3)
@@ -765,7 +765,6 @@ packages:
 
   /@vue/devtools-api@6.6.4:
     resolution: {integrity: sha512-sGhTPMuXqZ1rVOk32RylztWkfXTRhuS7vgAKv0zjqk8gbsHkJ7xfFf+jbySxt7tWObEJwyKaHMikV/WGDiQm8g==}
-    dev: false
 
   /@vue/language-core@1.8.27(typescript@5.7.3):
     resolution: {integrity: sha512-L8Kc27VdQserNaCUNiSFdDl9LWT24ly8Hpwf1ECy3aFb9m6bDhBGQYOujDm21N7EW3moKIOKEanQwe1q5BK+mA==}
@@ -2592,7 +2591,7 @@ packages:
       vue-demi: 0.14.10(vue@3.5.13)
     transitivePeerDependencies:
       - '@vue/composition-api'
-    dev: false
+    dev: true
 
   /pkg-types@1.3.1:
     resolution: {integrity: sha512-/Jm5M4RvtBFVkKWRu2BLUTNP8/M2a+UwuAX+ae4770q1qVGtfjG+WTCupoZixokjmHiry8uI+dlY8KXYV5HVVQ==}
@@ -3182,8 +3181,8 @@ packages:
     resolution: {integrity: sha512-oqkWFa7kQIkvHXG7+Mnl1RTroA4sP0yesKatmAy0gjZC4VwUqlvF9IvOpHd1fpLWsqYX/eZlVxlhULNtaQ78Jw==}
     dev: true
 
-  /vite-plugin-electron@0.29.0(vite-plugin-electron-renderer@0.14.6):
-    resolution: {integrity: sha512-HP0DI9Shg41hzt55IKYVnbrChWXHX95QtsEQfM+szQBpWjVhVGMlqRjVco6ebfQjWNr+Ga+PeoBjMIl8zMaufw==}
+  /vite-plugin-electron@0.28.8(vite-plugin-electron-renderer@0.14.6):
+    resolution: {integrity: sha512-ir+B21oSGK9j23OEvt4EXyco9xDCaF6OGFe0V/8Zc0yL2+HMyQ6mmNQEIhXsEsZCSfIowBpwQBeHH4wVsfraeg==}
     peerDependencies:
       vite-plugin-electron-renderer: '*'
     peerDependenciesMeta:
@@ -3242,7 +3241,6 @@ packages:
         optional: true
     dependencies:
       vue: 3.5.13(typescript@5.7.3)
-    dev: false
 
   /vue-router@4.5.0(vue@3.5.13):
     resolution: {integrity: sha512-HDuk+PuH5monfNuY+ct49mNmkCRK4xJAV9Ts4z9UFc4rzdDnxQLyCMGGc8pKhZhHTVzfanpNwB/lwqevcBwI4w==}
