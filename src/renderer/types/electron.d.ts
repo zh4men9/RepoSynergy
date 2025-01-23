@@ -1,9 +1,19 @@
-interface Repository {
+export interface Repository {
   id: string;
   name: string;
   platform: 'github' | 'gitee';
   syncEnabled: boolean;
   lastSyncTime?: string;
+}
+
+export interface SyncStatus {
+  status: 'idle' | 'syncing' | 'error';
+  message?: string;
+  lastSyncTime?: string;
+}
+
+export interface SyncStatuses {
+  [repoId: string]: SyncStatus;
 }
 
 interface RepositoryStats {

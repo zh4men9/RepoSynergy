@@ -1,121 +1,114 @@
 <template>
-  <div class="app">
-    <!-- 导航栏 -->
-    <nav class="nav">
-      <router-link to="/" class="nav-item">
-        <i class="fas fa-home"></i>
-        <span>首页</span>
-      </router-link>
-      <router-link to="/repositories" class="nav-item">
-        <i class="fas fa-code-branch"></i>
-        <span>仓库</span>
-      </router-link>
-      <router-link to="/analytics" class="nav-item">
-        <i class="fas fa-chart-bar"></i>
-        <span>分析</span>
-      </router-link>
-      <router-link to="/settings" class="nav-item">
-        <i class="fas fa-cog"></i>
-        <span>设置</span>
-      </router-link>
-    </nav>
-
-    <!-- 主内容区 -->
-    <main class="main">
-      <router-view></router-view>
-    </main>
-  </div>
+  <el-config-provider namespace="ep">
+    <div class="app">
+      <el-container>
+        <el-aside width="200px">
+          <el-menu
+            :router="true"
+            :default-active="$route.path"
+            class="menu"
+          >
+            <el-menu-item index="/">
+              <el-icon><House /></el-icon>
+              <span>首页</span>
+            </el-menu-item>
+            <el-menu-item index="/repositories">
+              <el-icon><Document /></el-icon>
+              <span>仓库管理</span>
+            </el-menu-item>
+            <el-menu-item index="/settings">
+              <el-icon><Setting /></el-icon>
+              <span>设置</span>
+            </el-menu-item>
+          </el-menu>
+        </el-aside>
+        <el-container>
+          <el-header height="60px">
+            <div class="header">
+              <h1>RepoSynergy</h1>
+              <div class="user-info">
+                <!-- TODO: 添加用户信息和登出按钮 -->
+              </div>
+            </div>
+          </el-header>
+          <el-main>
+            <router-view></router-view>
+          </el-main>
+        </el-container>
+      </el-container>
+    </div>
+  </el-config-provider>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from './stores/auth';
-
-const router = useRouter();
-const authStore = useAuthStore();
-
-// 检查认证状态
-onMounted(async () => {
-  try {
-    await authStore.checkAuthStatus();
-    if (!authStore.isAuthenticated) {
-      router.push('/settings');
-    }
-  } catch (error) {
-    console.error('检查认证状态失败:', error);
-  }
-});
+import { House, Document, Setting } from '@element-plus/icons-vue';
 </script>
 
 <style>
-.app {
-  display: flex;
+html, body {
+  margin: 0;
+  padding: 0;
   height: 100vh;
-  background-color: var(--bg-color);
-  color: var(--text-color);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-.nav {
-  width: 200px;
-  padding: 20px;
-  background-color: var(--nav-bg-color);
-  border-right: 1px solid var(--border-color);
+#app {
+  height: 100vh;
 }
 
-.nav-item {
+.app {
+  height: 100vh;
+}
+
+.el-container {
+  height: 100%;
+}
+
+.el-aside {
+  background-color: #304156;
+  color: #fff;
+}
+
+.menu {
+  height: 100%;
+  border-right: none;
+  background-color: transparent;
+}
+
+.el-menu-item {
+  color: #bfcbd9;
+}
+
+.el-menu-item.is-active {
+  color: #409eff;
+  background-color: #263445;
+}
+
+.el-menu-item:hover {
+  background-color: #263445;
+}
+
+.el-header {
+  background-color: #fff;
+  border-bottom: 1px solid #e6e6e6;
+  padding: 0 20px;
+}
+
+.header {
+  height: 100%;
   display: flex;
   align-items: center;
-  padding: 12px;
-  margin-bottom: 8px;
-  border-radius: 8px;
-  color: var(--text-color);
-  text-decoration: none;
-  transition: background-color 0.2s;
+  justify-content: space-between;
 }
 
-.nav-item:hover {
-  background-color: var(--hover-color);
+.header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #303133;
 }
 
-.nav-item.router-link-active {
-  background-color: var(--active-color);
-  color: var(--primary-color);
-}
-
-.nav-item i {
-  margin-right: 12px;
-  font-size: 1.2em;
-}
-
-.main {
-  flex: 1;
+.el-main {
+  background-color: #f0f2f5;
   padding: 20px;
-  overflow-y: auto;
-}
-
-/* 主题变量 */
-:root {
-  /* 浅色主题 */
-  --bg-color: #f5f6fa;
-  --nav-bg-color: #ffffff;
-  --text-color: #2c3e50;
-  --border-color: #e1e4e8;
-  --hover-color: #f1f2f6;
-  --active-color: #e3f2fd;
-  --primary-color: #1976d2;
-}
-
-/* 深色主题 */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-color: #1a1a1a;
-    --nav-bg-color: #2d2d2d;
-    --text-color: #e1e1e1;
-    --border-color: #404040;
-    --hover-color: #3d3d3d;
-    --active-color: #0d47a1;
-    --primary-color: #42a5f5;
-  }
 }
 </style> 

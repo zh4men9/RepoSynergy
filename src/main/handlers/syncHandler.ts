@@ -11,13 +11,14 @@ import {
 /**
  * 注册同步相关的IPC处理程序
  */
-export function registerSyncHandlers(): void {
+export function setupSyncHandlers(): void {
   // 开始同步
   ipcMain.handle('sync:start', async (_event, repositoryId: string) => {
     try {
-      return await startSync(repositoryId);
+      const result = await startSync(repositoryId);
+      return result;
     } catch (error) {
-      console.error('开始同步失败:', error);
+      console.error('启动同步失败:', error);
       throw error;
     }
   });
@@ -25,7 +26,8 @@ export function registerSyncHandlers(): void {
   // 停止同步
   ipcMain.handle('sync:stop', async (_event, repositoryId: string) => {
     try {
-      return await stopSync(repositoryId);
+      const result = await stopSync(repositoryId);
+      return result;
     } catch (error) {
       console.error('停止同步失败:', error);
       throw error;
@@ -33,9 +35,14 @@ export function registerSyncHandlers(): void {
   });
 
   // 获取同步状态
-  ipcMain.handle('sync:getStatus', async (_event, repositoryId: string) => {
+  ipcMain.handle('sync:status', async (_event, repositoryId: string) => {
     try {
-      return await getSyncStatus(repositoryId);
+      // TODO: 实现获取同步状态的逻辑
+      return {
+        status: 'idle',
+        lastSync: undefined,
+        error: undefined,
+      };
     } catch (error) {
       console.error('获取同步状态失败:', error);
       throw error;
@@ -45,7 +52,8 @@ export function registerSyncHandlers(): void {
   // 设置同步间隔
   ipcMain.handle('sync:setInterval', async (_event, minutes: number) => {
     try {
-      return await setSyncInterval(minutes);
+      await setSyncInterval(minutes);
+      return { success: true };
     } catch (error) {
       console.error('设置同步间隔失败:', error);
       throw error;
@@ -55,7 +63,8 @@ export function registerSyncHandlers(): void {
   // 获取同步间隔
   ipcMain.handle('sync:getInterval', async (_event) => {
     try {
-      return await getSyncInterval();
+      const interval = await getSyncInterval();
+      return interval;
     } catch (error) {
       console.error('获取同步间隔失败:', error);
       throw error;

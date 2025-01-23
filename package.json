@@ -1,40 +1,50 @@
 {
   "name": "reposynergy",
   "version": "1.0.0",
-  "description": "A powerful desktop application for managing and synchronizing GitHub and Gitee repositories",
+  "description": "A GitHub and Gitee repository synchronization tool",
   "main": "dist/main/main.js",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc && vite build && electron-builder",
+    "build": "vue-tsc && vite build",
     "preview": "vite preview",
-    "test": "jest"
+    "electron:dev": "vite build && electron .",
+    "electron:build": "vite build && electron-builder",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "format": "prettier --write src/"
   },
+  "keywords": [
+    "github",
+    "gitee",
+    "sync",
+    "electron"
+  ],
+  "author": "zh4men9",
+  "license": "MIT",
   "dependencies": {
-    "@octokit/rest": "^21.1.0",
     "axios": "^1.6.7",
+    "echarts": "^5.6.0",
     "electron-store": "^8.1.0",
+    "element-plus": "^2.5.6",
+    "pinia": "^2.1.7",
     "vue": "^3.4.15",
-    "vue-router": "^4.2.5",
-    "vuex": "^4.1.0"
+    "vue-router": "^4.2.5"
   },
   "devDependencies": {
-    "@types/axios": "^0.14.0",
-    "@types/electron-store": "^3.2.0",
-    "@types/jest": "^29.5.12",
-    "@types/node": "^20.11.17",
-    "@vitejs/plugin-vue": "^5.0.3",
+    "@element-plus/icons-vue": "^2.3.1",
+    "@octokit/rest": "^21.1.0",
+    "@tsconfig/node18": "^18.2.4",
+    "@types/node": "^20.11.19",
+    "@vitejs/plugin-vue": "^4.5.2",
     "electron": "^28.2.0",
     "electron-builder": "^24.9.1",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.1.2",
     "typescript": "^5.3.3",
-    "vite": "^5.0.10",
+    "unplugin-auto-import": "^0.17.5",
+    "unplugin-vue-components": "^0.26.0",
+    "vite": "^4.5.2",
     "vite-plugin-electron": "^0.28.0",
     "vite-plugin-electron-renderer": "^0.14.5",
     "vue-tsc": "^1.8.27"
   },
-  "author": "zh4men9",
-  "license": "MIT",
   "build": {
     "appId": "com.reposynergy.app",
     "productName": "RepoSynergy",
@@ -60,4 +70,4 @@
       "category": "Development"
     }
   }
-} 
+}

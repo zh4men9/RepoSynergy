@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type { Repository } from '../types/electron';
 
 // 认证API
 const auth = {
@@ -10,8 +11,10 @@ const auth = {
 
 // 仓库API
 const repository = {
-  fetchGithubRepos: () => ipcRenderer.invoke('repo:fetchGithubRepos'),
-  fetchGiteeRepos: () => ipcRenderer.invoke('repo:fetchGiteeRepos'),
+  fetchGithubRepos: () => ipcRenderer.invoke('repository:fetchGithubRepos'),
+  fetchGiteeRepos: () => ipcRenderer.invoke('repository:fetchGiteeRepos'),
+  addToSync: (repo: Repository) => ipcRenderer.invoke('repository:addToSync', repo),
+  removeFromSync: (repoId: string) => ipcRenderer.invoke('repository:removeFromSync', repoId),
   addRepository: (repository: any) => ipcRenderer.invoke('repo:addRepository', repository),
   removeRepository: (id: string) => ipcRenderer.invoke('repo:removeRepository', id),
   updateRepository: (id: string, updates: any) => ipcRenderer.invoke('repo:updateRepository', id, updates),
@@ -20,9 +23,9 @@ const repository = {
 
 // 同步API
 const sync = {
-  start: (repositoryId: string) => ipcRenderer.invoke('sync:start', repositoryId),
-  stop: (repositoryId: string) => ipcRenderer.invoke('sync:stop', repositoryId),
-  getStatus: (repositoryId: string) => ipcRenderer.invoke('sync:getStatus', repositoryId),
+  start: (repoId: string) => ipcRenderer.invoke('sync:start', repoId),
+  stop: (repoId: string) => ipcRenderer.invoke('sync:stop', repoId),
+  status: (repoId: string) => ipcRenderer.invoke('sync:status', repoId),
   setInterval: (minutes: number) => ipcRenderer.invoke('sync:setInterval', minutes),
   getInterval: () => ipcRenderer.invoke('sync:getInterval'),
 };
@@ -36,9 +39,11 @@ const analytics = {
 };
 
 // 暴露API到渲染进程
-contextBridge.exposeInMainWorld('api', {
+const api = {
   auth,
   repository,
   sync,
   analytics,
-}); 
+};
+
+contextBridge.exposeInMainWorld('api', api); 

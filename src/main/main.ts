@@ -2,11 +2,9 @@
 
 import { app, BrowserWindow } from 'electron';
 import { join } from 'path';
-import { startPythonBackend, stopPythonBackend } from './services/pythonBackend';
-import { registerAuthHandlers } from './handlers/authHandler';
-import { registerRepoHandlers } from './handlers/repoHandler';
-import { registerSyncHandlers } from './handlers/syncHandler';
-import { registerAnalyticsHandlers } from './handlers/analyticsHandler';
+import { setupAuthHandlers } from './handlers/authHandler';
+import { setupRepositoryHandlers } from './handlers/repositoryHandler';
+import { setupSyncHandlers } from './handlers/syncHandler';
 import { initializeStore } from './services/store';
 
 /**
@@ -17,7 +15,7 @@ let mainWindow: BrowserWindow | null = null;
 /**
  * 创建主窗口
  */
-async function createWindow(): Promise<void> {
+function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -30,15 +28,16 @@ async function createWindow(): Promise<void> {
     },
   });
 
-  // 加载应用
-  if (process.env.VITE_DEV_SERVER_URL) {
-    await mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    await mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+    mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
 
-  mainWindow.show();
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
 }
 
 /**
@@ -49,17 +48,13 @@ async function initialize(): Promise<void> {
     // 初始化存储
     await initializeStore();
 
-    // 启动Python后端
-    await startPythonBackend();
+    // 创建窗口
+    createWindow();
 
     // 注册IPC处理程序
-    registerAuthHandlers();
-    registerRepoHandlers();
-    registerSyncHandlers();
-    registerAnalyticsHandlers();
-
-    // 创建窗口
-    await createWindow();
+    setupAuthHandlers();
+    setupRepositoryHandlers();
+    setupSyncHandlers();
   } catch (error) {
     console.error('初始化失败:', error);
     app.quit();
@@ -67,25 +62,21 @@ async function initialize(): Promise<void> {
 }
 
 // 应用程序就绪时
-app.whenReady().then(initialize);
+app.whenReady().then(() => {
+  initialize();
+
+  app.on('activate', () => {
+    if (mainWindow === null) {
+      createWindow();
+    }
+  });
+});
 
 // 所有窗口关闭时
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
-});
-
-// 激活应用时
-app.on('activate', () => {
-  if (mainWindow === null) {
-    createWindow();
-  }
-});
-
-// 应用退出时
-app.on('before-quit', async () => {
-  await stopPythonBackend();
 });
 
 // 错误处理

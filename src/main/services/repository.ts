@@ -1,6 +1,7 @@
 import { Octokit } from '@octokit/rest';
 import axios from 'axios';
-import { getStore } from './store';
+import { getStore, getGithubToken, getGiteeToken } from './store';
+import type { Repository } from '../../types/electron';
 
 /**
  * 仓库接口
@@ -165,5 +166,66 @@ export async function getSyncList(): Promise<Repository[]> {
   } catch (error) {
     console.error('获取同步列表失败:', error);
     throw error;
+  }
+}
+
+export async function getGithubRepos(): Promise<Repository[]> {
+  const token = getGithubToken();
+  if (!token) {
+    throw new Error('GitHub 令牌未设置');
+  }
+
+  try {
+    const response = await axios.get('https://api.github.com/user/repos', {
+      headers: {
+        Authorization: `token ${token}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+      params: {
+        per_page: 100,
+        sort: 'updated',
+        direction: 'desc',
+      },
+    });
+
+    return response.data.map((repo: any) => ({
+      id: repo.id.toString(),
+      name: repo.name,
+      platform: 'github',
+      syncEnabled: false,
+      lastSyncTime: undefined,
+    }));
+  } catch (error) {
+    throw new Error('获取 GitHub 仓库列表失败');
+  }
+}
+
+export async function getGiteeRepos(): Promise<Repository[]> {
+  const token = getGiteeToken();
+  if (!token) {
+    throw new Error('Gitee 令牌未设置');
+  }
+
+  try {
+    const response = await axios.get('https://gitee.com/api/v5/user/repos', {
+      headers: {
+        Authorization: `token ${token}`,
+      },
+      params: {
+        per_page: 100,
+        sort: 'updated',
+        direction: 'desc',
+      },
+    });
+
+    return response.data.map((repo: any) => ({
+      id: repo.id.toString(),
+      name: repo.name,
+      platform: 'gitee',
+      syncEnabled: false,
+      lastSyncTime: undefined,
+    }));
+  } catch (error) {
+    throw new Error('获取 Gitee 仓库列表失败');
   }
 } 

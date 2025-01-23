@@ -1,11 +1,12 @@
 {
-  "extends": "./tsconfig.json",
+  "extends": "@tsconfig/node18/tsconfig.json",
+  "include": ["electron", "src/main/**/*", "src/preload/**/*"],
   "compilerOptions": {
     "composite": true,
     "module": "ESNext",
     "moduleResolution": "Node",
+    "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "types": ["node"]
-  },
-  "include": ["src/main/**/*.ts", "src/main/**/*.d.ts", "vite.config.ts"]
+  }
 } 

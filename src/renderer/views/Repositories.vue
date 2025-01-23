@@ -6,46 +6,57 @@
         <el-button type="primary" @click="refreshRepositories" :loading="loading">
           刷新
         </el-button>
+        <el-button type="success" @click="syncSelectedRepos" :loading="syncing">
+          同步选中
+        </el-button>
       </div>
     </div>
 
-    <el-tabs v-model="activeTab" class="repository-tabs">
+    <el-tabs v-model="activeTab" class="repo-tabs">
       <el-tab-pane label="GitHub 仓库" name="github">
         <el-table
+          v-loading="loading"
           :data="githubRepos"
           style="width: 100%"
-          v-loading="loading"
+          @selection-change="handleGithubSelectionChange"
         >
-          <el-table-column prop="name" label="仓库名称" />
-          <el-table-column label="同步状态" width="120">
+          <el-table-column type="selection" width="55" />
+          <el-table-column prop="name" label="仓库名称" min-width="200">
             <template #default="{ row }">
-              <el-switch
-                v-model="row.syncEnabled"
-                @change="(val) => handleSyncChange(row, val)"
-              />
+              <div class="repo-name">
+                <el-icon><Document /></el-icon>
+                <span>{{ row.name }}</span>
+              </div>
             </template>
           </el-table-column>
-          <el-table-column label="最后同步" width="180">
+          <el-table-column prop="syncEnabled" label="同步状态" width="120">
             <template #default="{ row }">
-              {{ formatDate(row.lastSyncTime) }}
+              <el-tag :type="row.syncEnabled ? 'success' : 'info'">
+                {{ row.syncEnabled ? '已启用' : '未启用' }}
+              </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200">
+          <el-table-column prop="lastSyncTime" label="最后同步" width="180">
             <template #default="{ row }">
+              {{ row.lastSyncTime ? formatDate(row.lastSyncTime) : '从未同步' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="200" fixed="right">
+            <template #default="{ row }">
+              <el-button
+                :type="row.syncEnabled ? 'danger' : 'success'"
+                size="small"
+                @click="toggleSync(row)"
+              >
+                {{ row.syncEnabled ? '停用同步' : '启用同步' }}
+              </el-button>
               <el-button
                 type="primary"
                 size="small"
                 @click="startSync(row)"
                 :disabled="!row.syncEnabled"
               >
-                同步
-              </el-button>
-              <el-button
-                type="info"
-                size="small"
-                @click="viewDetails(row)"
-              >
-                详情
+                立即同步
               </el-button>
             </template>
           </el-table-column>
@@ -54,258 +65,182 @@
 
       <el-tab-pane label="Gitee 仓库" name="gitee">
         <el-table
+          v-loading="loading"
           :data="giteeRepos"
           style="width: 100%"
-          v-loading="loading"
+          @selection-change="handleGiteeSelectionChange"
         >
-          <el-table-column prop="name" label="仓库名称" />
-          <el-table-column label="同步状态" width="120">
+          <el-table-column type="selection" width="55" />
+          <el-table-column prop="name" label="仓库名称" min-width="200">
             <template #default="{ row }">
-              <el-switch
-                v-model="row.syncEnabled"
-                @change="(val) => handleSyncChange(row, val)"
-              />
+              <div class="repo-name">
+                <el-icon><Document /></el-icon>
+                <span>{{ row.name }}</span>
+              </div>
             </template>
           </el-table-column>
-          <el-table-column label="最后同步" width="180">
+          <el-table-column prop="syncEnabled" label="同步状态" width="120">
             <template #default="{ row }">
-              {{ formatDate(row.lastSyncTime) }}
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="200">
-            <template #default="{ row }">
-              <el-button
-                type="primary"
-                size="small"
-                @click="startSync(row)"
-                :disabled="!row.syncEnabled"
-              >
-                同步
-              </el-button>
-              <el-button
-                type="info"
-                size="small"
-                @click="viewDetails(row)"
-              >
-                详情
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-tab-pane>
-
-      <el-tab-pane label="同步列表" name="sync">
-        <el-table
-          :data="syncList"
-          style="width: 100%"
-          v-loading="loading"
-        >
-          <el-table-column prop="name" label="仓库名称" />
-          <el-table-column prop="platform" label="平台" width="120">
-            <template #default="{ row }">
-              {{ row.platform === 'github' ? 'GitHub' : 'Gitee' }}
-            </template>
-          </el-table-column>
-          <el-table-column label="同步状态" width="120">
-            <template #default="{ row }">
-              <el-tag :type="getSyncStatusType(row)">
-                {{ getSyncStatusText(row) }}
+              <el-tag :type="row.syncEnabled ? 'success' : 'info'">
+                {{ row.syncEnabled ? '已启用' : '未启用' }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="最后同步" width="180">
+          <el-table-column prop="lastSyncTime" label="最后同步" width="180">
             <template #default="{ row }">
-              {{ formatDate(row.lastSyncTime) }}
+              {{ row.lastSyncTime ? formatDate(row.lastSyncTime) : '从未同步' }}
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200">
+          <el-table-column label="操作" width="200" fixed="right">
             <template #default="{ row }">
+              <el-button
+                :type="row.syncEnabled ? 'danger' : 'success'"
+                size="small"
+                @click="toggleSync(row)"
+              >
+                {{ row.syncEnabled ? '停用同步' : '启用同步' }}
+              </el-button>
               <el-button
                 type="primary"
                 size="small"
                 @click="startSync(row)"
                 :disabled="!row.syncEnabled"
               >
-                同步
-              </el-button>
-              <el-button
-                type="danger"
-                size="small"
-                @click="removeFromSync(row)"
-              >
-                移除
+                立即同步
               </el-button>
             </template>
           </el-table-column>
         </el-table>
       </el-tab-pane>
     </el-tabs>
-
-    <el-dialog
-      v-model="detailsVisible"
-      :title="selectedRepo ? selectedRepo.name + ' 详情' : '仓库详情'"
-      width="80%"
-    >
-      <template v-if="selectedRepo">
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="仓库名称">
-            {{ selectedRepo.name }}
-          </el-descriptions-item>
-          <el-descriptions-item label="平台">
-            {{ selectedRepo.platform === 'github' ? 'GitHub' : 'Gitee' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="同步状态">
-            <el-tag :type="getSyncStatusType(selectedRepo)">
-              {{ getSyncStatusText(selectedRepo) }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="最后同步时间">
-            {{ formatDate(selectedRepo.lastSyncTime) }}
-          </el-descriptions-item>
-        </el-descriptions>
-
-        <div class="details-actions">
-          <el-button
-            type="primary"
-            @click="startSync(selectedRepo)"
-            :disabled="!selectedRepo.syncEnabled"
-          >
-            同步
-          </el-button>
-          <el-button
-            type="danger"
-            @click="removeFromSync(selectedRepo)"
-            v-if="selectedRepo.syncEnabled"
-          >
-            移除同步
-          </el-button>
-        </div>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, defineComponent } from 'vue';
+import type { PropType } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { Document } from '@element-plus/icons-vue';
 import { useRepositoryStore } from '../stores/repository';
 import { useSyncStore } from '../stores/sync';
+import type { Repository } from '../types/electron';
 
-interface Repository {
-  id: string;
-  name: string;
-  platform: 'github' | 'gitee';
-  syncEnabled: boolean;
-  lastSyncTime?: string;
-}
+defineComponent({
+  name: 'Repositories',
+  components: {
+    Document
+  }
+});
 
 const repoStore = useRepositoryStore();
 const syncStore = useSyncStore();
 
-const activeTab = ref('github');
-const loading = ref(false);
-const detailsVisible = ref(false);
-const selectedRepo = ref<Repository | null>(null);
+const activeTab = ref<string>('github');
+const loading = ref<boolean>(false);
+const syncing = ref<boolean>(false);
+const selectedGithubRepos = ref<Repository[]>([]);
+const selectedGiteeRepos = ref<Repository[]>([]);
 
 const githubRepos = computed(() => repoStore.githubRepos);
 const giteeRepos = computed(() => repoStore.giteeRepos);
-const syncList = computed(() => repoStore.syncList);
+
+onMounted(async () => {
+  await refreshRepositories();
+});
 
 const refreshRepositories = async () => {
   loading.value = true;
   try {
-    await repoStore.fetchGithubRepos();
-    await repoStore.fetchGiteeRepos();
-    await repoStore.fetchSyncList();
-    ElMessage.success('刷新成功');
+    await Promise.all([
+      repoStore.fetchGithubRepos(),
+      repoStore.fetchGiteeRepos(),
+      repoStore.fetchSyncList()
+    ]);
   } catch (error) {
-    ElMessage.error('刷新失败');
+    ElMessage.error('获取仓库列表失败');
   } finally {
     loading.value = false;
   }
 };
 
-const handleSyncChange = async (repo: Repository, enabled: boolean) => {
+const handleGithubSelectionChange = (selection: Repository[]) => {
+  selectedGithubRepos.value = selection;
+};
+
+const handleGiteeSelectionChange = (selection: Repository[]) => {
+  selectedGiteeRepos.value = selection;
+};
+
+const toggleSync = async (repo: Repository) => {
   try {
-    if (enabled) {
-      await repoStore.addRepository(repo);
-      ElMessage.success('添加到同步列表成功');
-    } else {
+    if (repo.syncEnabled) {
       await repoStore.removeRepository(repo.id);
-      ElMessage.success('从同步列表移除成功');
+      ElMessage.success('已停用同步');
+    } else {
+      await repoStore.addRepository(repo);
+      ElMessage.success('已启用同步');
     }
   } catch (error) {
-    ElMessage.error(enabled ? '添加失败' : '移除失败');
-    repo.syncEnabled = !enabled;
+    ElMessage.error(repo.syncEnabled ? '停用同步失败' : '启用同步失败');
   }
 };
 
 const startSync = async (repo: Repository) => {
   try {
     await syncStore.startSync(repo.id);
-    ElMessage.success('同步开始');
+    ElMessage.success('同步已开始');
   } catch (error) {
-    ElMessage.error('同步失败');
+    ElMessage.error('启动同步失败');
   }
 };
 
-const removeFromSync = async (repo: Repository) => {
+const syncSelectedRepos = async () => {
+  const selectedRepos = activeTab.value === 'github' 
+    ? selectedGithubRepos.value 
+    : selectedGiteeRepos.value;
+
+  if (selectedRepos.length === 0) {
+    ElMessage.warning('请选择要同步的仓库');
+    return;
+  }
+
   try {
     await ElMessageBox.confirm(
-      '确定要从同步列表中移除该仓库吗？',
-      '提示',
+      `确定要同步选中的 ${selectedRepos.length} 个仓库吗？`,
+      '确认同步',
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning',
       }
     );
-    await repoStore.removeRepository(repo.id);
-    ElMessage.success('移除成功');
+
+    syncing.value = true;
+    for (const repo of selectedRepos) {
+      if (!repo.syncEnabled) {
+        await repoStore.addRepository(repo);
+      }
+      await syncStore.startSync(repo.id);
+    }
+    ElMessage.success('已开始同步选中的仓库');
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('移除失败');
+      ElMessage.error('同步失败');
     }
+  } finally {
+    syncing.value = false;
   }
 };
 
-const viewDetails = (repo: Repository) => {
-  selectedRepo.value = repo;
-  detailsVisible.value = true;
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 };
-
-const formatDate = (date?: string) => {
-  if (!date) return '未同步';
-  return new Date(date).toLocaleString();
-};
-
-const getSyncStatusType = (repo: Repository) => {
-  if (!repo.syncEnabled) return 'info';
-  const status = syncStore.syncStatuses[repo.id]?.status;
-  switch (status) {
-    case 'syncing':
-      return 'warning';
-    case 'error':
-      return 'danger';
-    default:
-      return 'success';
-  }
-};
-
-const getSyncStatusText = (repo: Repository) => {
-  if (!repo.syncEnabled) return '未启用';
-  const status = syncStore.syncStatuses[repo.id]?.status;
-  switch (status) {
-    case 'syncing':
-      return '同步中';
-    case 'error':
-      return '错误';
-    default:
-      return '已启用';
-  }
-};
-
-onMounted(refreshRepositories);
 </script>
 
 <style scoped>
@@ -322,18 +257,27 @@ onMounted(refreshRepositories);
 
 .header h1 {
   margin: 0;
+  font-size: 1.8rem;
   color: var(--el-text-color-primary);
 }
 
-.repository-tabs {
+.actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.repo-tabs {
   margin-top: 1rem;
 }
 
-.details-actions {
-  margin-top: 2rem;
+.repo-name {
   display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.repo-name .el-icon {
+  color: var(--el-text-color-secondary);
 }
 
 @media (max-width: 768px) {
@@ -344,12 +288,11 @@ onMounted(refreshRepositories);
   .header {
     flex-direction: column;
     gap: 1rem;
-    align-items: stretch;
+    align-items: flex-start;
   }
 
   .actions {
-    display: flex;
-    justify-content: stretch;
+    width: 100%;
   }
 
   .actions .el-button {

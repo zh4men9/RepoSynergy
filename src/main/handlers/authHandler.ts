@@ -1,50 +1,30 @@
 import { ipcMain } from 'electron';
-import { getStore } from '../services/store';
+import { setGithubToken, setGiteeToken, clearTokens } from '../services/store';
 import { validateGithubToken, validateGiteeToken } from '../services/auth';
 
 /**
  * 注册认证相关的IPC处理程序
  */
-export function registerAuthHandlers(): void {
+export function setupAuthHandlers(): void {
   // 设置GitHub令牌
-  ipcMain.handle('auth:setGithubToken', async (_event, token: string) => {
+  ipcMain.handle('auth:setGithubToken', async (_, token: string) => {
     try {
-      // 验证令牌
-      const username = await validateGithubToken(token);
-      if (!username) {
-        throw new Error('GitHub令牌验证失败');
-      }
-
-      // 存储令牌和用户名
-      const store = getStore();
-      store.set('github_token', token);
-      store.set('github_username', username);
-
+      const { username } = await validateGithubToken(token);
+      setGithubToken(token);
       return { success: true, username };
     } catch (error) {
-      console.error('设置GitHub令牌失败:', error);
-      throw error;
+      return { success: false, error: (error as Error).message };
     }
   });
 
   // 设置Gitee令牌
-  ipcMain.handle('auth:setGiteeToken', async (_event, token: string) => {
+  ipcMain.handle('auth:setGiteeToken', async (_, token: string) => {
     try {
-      // 验证令牌
-      const username = await validateGiteeToken(token);
-      if (!username) {
-        throw new Error('Gitee令牌验证失败');
-      }
-
-      // 存储令牌和用户名
-      const store = getStore();
-      store.set('gitee_token', token);
-      store.set('gitee_username', username);
-
+      const { username } = await validateGiteeToken(token);
+      setGiteeToken(token);
       return { success: true, username };
     } catch (error) {
-      console.error('设置Gitee令牌失败:', error);
-      throw error;
+      return { success: false, error: (error as Error).message };
     }
   });
 
@@ -69,17 +49,12 @@ export function registerAuthHandlers(): void {
   });
 
   // 清除认证信息
-  ipcMain.handle('auth:clear', (_event) => {
+  ipcMain.handle('auth:clear', async () => {
     try {
-      const store = getStore();
-      store.delete('github_token');
-      store.delete('github_username');
-      store.delete('gitee_token');
-      store.delete('gitee_username');
+      clearTokens();
       return { success: true };
     } catch (error) {
-      console.error('清除认证信息失败:', error);
-      throw error;
+      return { success: false, error: (error as Error).message };
     }
   });
 } 

@@ -1,4 +1,3 @@
-import { Octokit } from '@octokit/rest';
 import axios from 'axios';
 
 /**
@@ -10,23 +9,29 @@ interface ValidationResult {
   error?: string;
 }
 
+interface AuthResponse {
+  username: string;
+}
+
 /**
  * 验证GitHub令牌
  * @param token GitHub访问令牌
  * @returns 验证结果，包含用户名（如果验证成功）
  */
-export async function validateGithubToken(token: string): Promise<string | null> {
+export async function validateGithubToken(token: string): Promise<AuthResponse> {
   try {
-    const octokit = new Octokit({
-      auth: token,
+    const response = await axios.get('https://api.github.com/user', {
+      headers: {
+        Authorization: `token ${token}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
     });
 
-    // 获取认证用户信息
-    const { data } = await octokit.users.getAuthenticated();
-    return data.login;
+    return {
+      username: response.data.login,
+    };
   } catch (error) {
-    console.error('GitHub令牌验证失败:', error);
-    return null;
+    throw new Error('GitHub 令牌验证失败');
   }
 }
 
@@ -35,20 +40,18 @@ export async function validateGithubToken(token: string): Promise<string | null>
  * @param token Gitee访问令牌
  * @returns 验证结果，包含用户名（如果验证成功）
  */
-export async function validateGiteeToken(token: string): Promise<string | null> {
+export async function validateGiteeToken(token: string): Promise<AuthResponse> {
   try {
     const response = await axios.get('https://gitee.com/api/v5/user', {
       headers: {
-        'Authorization': `token ${token}`,
+        Authorization: `token ${token}`,
       },
     });
 
-    if (response.status === 200 && response.data.login) {
-      return response.data.login;
-    }
-    return null;
+    return {
+      username: response.data.login,
+    };
   } catch (error) {
-    console.error('Gitee令牌验证失败:', error);
-    return null;
+    throw new Error('Gitee 令牌验证失败');
   }
 } 
