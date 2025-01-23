@@ -9,15 +9,12 @@
             class="menu"
           >
             <el-menu-item index="/">
-              <el-icon><House /></el-icon>
               <span>首页</span>
             </el-menu-item>
             <el-menu-item index="/repositories">
-              <el-icon><Document /></el-icon>
               <span>仓库管理</span>
             </el-menu-item>
             <el-menu-item index="/settings">
-              <el-icon><Setting /></el-icon>
               <span>设置</span>
             </el-menu-item>
           </el-menu>
@@ -41,10 +38,16 @@
 </template>
 
 <script setup lang="ts">
-import { House, Document, Setting } from '@element-plus/icons-vue';
+// 移除不需要的图标导入
 </script>
 
 <style>
+/* 重置 Element Plus 的默认样式 */
+:root {
+  --el-button-size: 32px;
+  --el-font-size-base: 14px;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -54,6 +57,8 @@ html, body {
 
 #app {
   height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .app {
@@ -77,6 +82,19 @@ html, body {
 
 .el-menu-item {
   color: #bfcbd9;
+  height: 45px;
+  line-height: 45px;
+}
+
+.el-menu-item .el-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  margin-right: 10px;
+}
+
+.el-menu-item span {
+  font-size: 14px;
 }
 
 .el-menu-item.is-active {
@@ -110,5 +128,60 @@ html, body {
 .el-main {
   background-color: #f0f2f5;
   padding: 20px;
+}
+
+.nav {
+  background: var(--color-bg-secondary);
+  padding: 1rem;
+  display: flex;
+  gap: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.nav-link {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.nav-link:hover {
+  color: var(--color-primary);
+  background: var(--color-bg-tertiary);
+}
+
+.nav-link.router-link-active {
+  color: var(--color-primary);
+  background: var(--color-bg-tertiary);
+}
+
+.main {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--color-bg-primary);
+}
+
+/* 重置按钮样式 */
+button {
+  font: inherit;
+  font-size: var(--text-sm);
+}
+
+.el-button {
+  height: auto;
+  --el-button-size: auto;
+  padding: 0.35rem 0.75rem;
+  font-size: var(--text-sm);
+}
+
+.el-button--small {
+  padding: 0.25rem 0.5rem;
+  font-size: var(--text-xs);
+}
+
+.el-button--large {
+  padding: 0.5rem 1rem;
+  font-size: var(--text-base);
 }
 </style> 

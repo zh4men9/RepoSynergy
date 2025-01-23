@@ -126,16 +126,24 @@ onMounted(async () => {
 
 .stat-card {
   background: var(--color-bg-secondary);
-  border-radius: 8px;
-  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  padding: 1rem;
   text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-card h3 {
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  color: var(--color-text-secondary);
+  margin: 0;
 }
 
 .stat-value {
-  font-size: 2rem;
-  font-weight: bold;
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
   color: var(--color-primary);
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 .repo-list {
@@ -144,30 +152,39 @@ onMounted(async () => {
 
 .repo-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
 
 .repo-card {
   background: var(--color-bg-secondary);
-  border-radius: 8px;
-  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .repo-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
+}
+
+.repo-header h3 {
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  margin: 0;
+  color: var(--color-text-primary);
 }
 
 .platform-badge {
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.875rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
   text-transform: capitalize;
 }
 
@@ -183,15 +200,16 @@ onMounted(async () => {
 
 .repo-desc {
   color: var(--color-text-secondary);
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   line-height: 1.4;
+  margin: 0;
 }
 
 .status-badge {
   display: inline-block;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.875rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
 }
 
 .status-badge.idle {
@@ -214,14 +232,16 @@ onMounted(async () => {
 }
 
 .repo-actions button {
-  width: 100%;
-  padding: 0.5rem;
-  border-radius: 4px;
+  width: auto;
+  min-width: 100px;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
   background: var(--color-primary);
   color: white;
   border: none;
   cursor: pointer;
   transition: background-color 0.2s;
+  font-size: var(--text-sm);
 }
 
 .repo-actions button:hover {

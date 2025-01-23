@@ -1,0 +1,66 @@
+/* Element Plus 样式覆盖 */
+:root {
+  /* 按钮相关变量 */
+  --el-button-size: auto !important;
+  --el-button-padding-vertical: 8px !important;
+  --el-button-padding-horizontal: 15px !important;
+  
+  /* 字体大小 */
+  --el-font-size-base: 14px !important;
+  --el-font-size-small: 13px !important;
+  
+  /* 输入框相关 */
+  --el-input-height: 32px !important;
+  --el-input-font-size: 14px !important;
+}
+
+/* 按钮样式覆盖 */
+.el-button {
+  height: auto !important;
+  padding: var(--el-button-padding-vertical) var(--el-button-padding-horizontal) !important;
+  font-size: var(--el-font-size-base) !important;
+}
+
+.el-button--small {
+  padding: 6px 12px !important;
+  font-size: var(--el-font-size-small) !important;
+}
+
+.el-button--mini {
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+}
+
+/* 输入框样式覆盖 */
+.el-input__wrapper {
+  padding: 1px 11px !important;
+}
+
+.el-input__inner {
+  height: var(--el-input-height) !important;
+  line-height: var(--el-input-height) !important;
+  font-size: var(--el-input-font-size) !important;
+}
+
+/* 下拉菜单样式 */
+.el-dropdown-menu {
+  padding: 4px 0 !important;
+}
+
+.el-dropdown-menu__item {
+  padding: 5px 16px !important;
+  font-size: var(--el-font-size-base) !important;
+}
+
+/* 表格样式 */
+.el-table {
+  font-size: var(--el-font-size-base) !important;
+}
+
+.el-table th {
+  padding: 8px 0 !important;
+}
+
+.el-table td {
+  padding: 6px 0 !important;
+} 
