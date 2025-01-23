@@ -2,12 +2,12 @@
 
 import { app, BrowserWindow } from 'electron';
 import { join } from 'path';
-import { initialize as initializeStore } from './store';
-import { registerAuthHandlers } from './handlers/auth';
-import { registerRepoHandlers } from './handlers/repository';
-import { registerSyncHandlers } from './handlers/sync';
-import { registerAnalyticsHandlers } from './handlers/analytics';
-import { startPythonBackend } from './backend';
+import { startPythonBackend, stopPythonBackend } from './services/pythonBackend';
+import { registerAuthHandlers } from './handlers/authHandler';
+import { registerRepoHandlers } from './handlers/repoHandler';
+import { registerSyncHandlers } from './handlers/syncHandler';
+import { registerAnalyticsHandlers } from './handlers/analyticsHandler';
+import { initializeStore } from './services/store';
 
 /**
  * 主窗口实例
@@ -26,17 +26,19 @@ async function createWindow(): Promise<void> {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: join(__dirname, 'preload.js')
-    }
+      preload: join(__dirname, '../preload/index.js'),
+    },
   });
 
-  // 开发环境加载本地服务，生产环境加载打包后的文件
-  if (process.env.NODE_ENV === 'development') {
-    await mainWindow.loadURL('http://localhost:5173');
+  // 加载应用
+  if (process.env.VITE_DEV_SERVER_URL) {
+    await mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools();
   } else {
     await mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
+
+  mainWindow.show();
 }
 
 /**
@@ -46,16 +48,16 @@ async function initialize(): Promise<void> {
   try {
     // 初始化存储
     await initializeStore();
-    
-    // 启动Python后端服务
+
+    // 启动Python后端
     await startPythonBackend();
-    
+
     // 注册IPC处理程序
     registerAuthHandlers();
     registerRepoHandlers();
     registerSyncHandlers();
     registerAnalyticsHandlers();
-    
+
     // 创建窗口
     await createWindow();
   } catch (error) {
@@ -64,29 +66,33 @@ async function initialize(): Promise<void> {
   }
 }
 
-// 应用程序准备就绪时创建窗口
+// 应用程序就绪时
 app.whenReady().then(initialize);
 
-// 所有窗口关闭时退出应用（macOS除外）
+// 所有窗口关闭时
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
-// macOS点击dock图标时重新创建窗口
+// 激活应用时
 app.on('activate', () => {
   if (mainWindow === null) {
     createWindow();
   }
 });
 
-// 处理未捕获的异常
-process.on('uncaughtException', (error: Error) => {
+// 应用退出时
+app.on('before-quit', async () => {
+  await stopPythonBackend();
+});
+
+// 错误处理
+process.on('uncaughtException', (error) => {
   console.error('未捕获的异常:', error);
 });
 
-// 处理未处理的Promise拒绝
-process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
+process.on('unhandledRejection', (reason) => {
   console.error('未处理的Promise拒绝:', reason);
 }); 

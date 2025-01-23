@@ -1,6 +1,10 @@
 import { Octokit } from '@octokit/rest';
 import axios from 'axios';
+import { getStore } from './store';
 
+/**
+ * 仓库接口
+ */
 interface Repository {
   id: string;
   name: string;
@@ -14,24 +18,27 @@ interface Repository {
  * @param token GitHub访问令牌
  * @returns 仓库列表
  */
-export async function fetchGithubRepositories(token: string): Promise<Repository[]> {
+export async function fetchGithubRepos(token: string): Promise<Repository[]> {
   try {
-    const octokit = new Octokit({ auth: token });
+    const octokit = new Octokit({
+      auth: token,
+    });
+
     const { data } = await octokit.repos.listForAuthenticatedUser({
       visibility: 'all',
       sort: 'updated',
-      per_page: 100
+      per_page: 100,
     });
 
     return data.map(repo => ({
-      id: `gh_${repo.id}`,
+      id: `github_${repo.id}`,
       name: repo.full_name,
       platform: 'github',
-      syncEnabled: false
+      syncEnabled: false,
     }));
   } catch (error) {
     console.error('获取GitHub仓库列表失败:', error);
-    throw new Error('获取GitHub仓库列表失败');
+    throw error;
   }
 }
 
@@ -40,55 +47,123 @@ export async function fetchGithubRepositories(token: string): Promise<Repository
  * @param token Gitee访问令牌
  * @returns 仓库列表
  */
-export async function fetchGiteeRepositories(token: string): Promise<Repository[]> {
+export async function fetchGiteeRepos(token: string): Promise<Repository[]> {
   try {
     const response = await axios.get('https://gitee.com/api/v5/user/repos', {
       headers: {
-        'Authorization': `token ${token}`
+        'Authorization': `token ${token}`,
       },
       params: {
         access_token: token,
         type: 'all',
         sort: 'updated',
-        per_page: 100
-      }
+        per_page: 100,
+      },
     });
 
     return response.data.map((repo: any) => ({
-      id: `gt_${repo.id}`,
+      id: `gitee_${repo.id}`,
       name: repo.full_name,
       platform: 'gitee',
-      syncEnabled: false
+      syncEnabled: false,
     }));
   } catch (error) {
     console.error('获取Gitee仓库列表失败:', error);
-    throw new Error('获取Gitee仓库列表失败');
+    throw error;
   }
 }
 
 /**
  * 添加仓库到同步列表
- * @param repository 仓库信息
+ * @param repository 要添加的仓库信息
+ * @returns 添加后的仓库信息
  */
-export async function addRepository(repository: Repository): Promise<void> {
-  // TODO: 实现仓库添加逻辑
-  // 例如：克隆仓库、设置远程等
+export async function addRepository(repository: Repository): Promise<Repository> {
+  try {
+    const store = getStore();
+    const repositories = store.get('repositories') || [];
+    
+    // 检查是否已存在
+    if (repositories.some((repo: Repository) => repo.id === repository.id)) {
+      throw new Error('仓库已存在于同步列表中');
+    }
+
+    // 添加到列表
+    const newRepository = {
+      ...repository,
+      syncEnabled: true,
+      lastSyncTime: new Date().toISOString(),
+    };
+    repositories.push(newRepository);
+    store.set('repositories', repositories);
+
+    return newRepository;
+  } catch (error) {
+    console.error('添加仓库失败:', error);
+    throw error;
+  }
 }
 
 /**
  * 从同步列表移除仓库
  * @param id 仓库ID
+ * @returns 是否成功移除
  */
-export async function removeRepository(id: string): Promise<void> {
-  // TODO: 实现仓库移除逻辑
-  // 例如：清理本地文件等
+export async function removeRepository(id: string): Promise<boolean> {
+  try {
+    const store = getStore();
+    const repositories = store.get('repositories') || [];
+    const newRepositories = repositories.filter((repo: Repository) => repo.id !== id);
+    store.set('repositories', newRepositories);
+    return true;
+  } catch (error) {
+    console.error('移除仓库失败:', error);
+    throw error;
+  }
 }
 
 /**
  * 更新仓库信息
- * @param repository 仓库信息
+ * @param id 仓库ID
+ * @param updates 要更新的字段
+ * @returns 更新后的仓库信息
  */
-export async function updateRepository(repository: Repository): Promise<void> {
-  // TODO: 实现仓库更新逻辑
-  // 例如：更新同步设置等
+export async function updateRepository(id: string, updates: Partial<Repository>): Promise<Repository> {
+  try {
+    const store = getStore();
+    const repositories = store.get('repositories') || [];
+    const index = repositories.findIndex((repo: Repository) => repo.id === id);
+
+    if (index === -1) {
+      throw new Error('仓库不存在');
+    }
+
+    const updatedRepository = {
+      ...repositories[index],
+      ...updates,
+      lastSyncTime: new Date().toISOString(),
+    };
+
+    repositories[index] = updatedRepository;
+    store.set('repositories', repositories);
+
+    return updatedRepository;
+  } catch (error) {
+    console.error('更新仓库失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 获取同步列表
+ * @returns 同步列表中的仓库
+ */
+export async function getSyncList(): Promise<Repository[]> {
+  try {
+    const store = getStore();
+    return store.get('repositories') || [];
+  } catch (error) {
+    console.error('获取同步列表失败:', error);
+    throw error;
+  }
 } 
